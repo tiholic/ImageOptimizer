@@ -244,4 +244,8 @@ MIT License - see LICENSE file for details
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request. 
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+### PR Previews
+
+Pull requests are automatically deployed to preview environments on Render.com. When you open a PR, a bot will comment with a preview URL where you can test your changes. See [PR_PREVIEW_SETUP.md](PR_PREVIEW_SETUP.md) for setup instructions. 
