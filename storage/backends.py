@@ -130,20 +130,16 @@ class GCSBackend(StorageBackend):
     
     def __init__(self, credentials, config):
         from google.cloud import storage as gcs_storage
+        from google.oauth2 import service_account
         import json
-        import tempfile
         
         self.bucket_name = config['bucket']
         
-        # GCS credentials are typically a JSON file
-        # Write credentials to temp file
-        with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.json') as f:
-            json.dump(json.loads(credentials['credentials_json']), f)
-            creds_file = f.name
+        # Parse credentials JSON and create credentials object
+        credentials_dict = json.loads(credentials['credentials_json'])
+        creds = service_account.Credentials.from_service_account_info(credentials_dict)
         
-        os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = creds_file
-        
-        self.client = gcs_storage.Client()
+        self.client = gcs_storage.Client(credentials=creds, project=credentials_dict.get('project_id'))
         self.bucket = self.client.bucket(self.bucket_name)
     
     def upload(self, file_obj, path):
@@ -257,20 +253,33 @@ class SFTPBackend(StorageBackend):
     
     def _mkdir_p(self, remote_directory):
         """Create directory recursively"""
+        if not remote_directory or remote_directory == '/':
+            return
+        
         dirs = []
         dir_path = remote_directory
         
-        while dir_path != '/':
+        # Build list of directories from deepest to root
+        while dir_path and dir_path != '/':
             dirs.append(dir_path)
-            dir_path = os.path.dirname(dir_path)
+            parent = os.path.dirname(dir_path)
+            # Prevent infinite loop if dirname returns same path
+            if parent == dir_path:
+                break
+            dir_path = parent
         
+        # Create directories from root to deepest
         dirs.reverse()
         
         for dir_path in dirs:
             try:
                 self.sftp.stat(dir_path)
-            except FileNotFoundError:
-                self.sftp.mkdir(dir_path)
+            except (FileNotFoundError, IOError):
+                try:
+                    self.sftp.mkdir(dir_path)
+                except (FileNotFoundError, IOError):
+                    # Directory might already exist or parent doesn't exist
+                    pass
     
     def __del__(self):
         """Clean up connection"""

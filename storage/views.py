@@ -30,9 +30,23 @@ class StorageProviderViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'])
     def set_default(self, request, pk=None):
         """Set this storage provider as default"""
+        from django.db import transaction
+        
         storage_provider = self.get_object()
-        storage_provider.is_default = True
-        storage_provider.save()
+        
+        with transaction.atomic():
+            # Lock all providers for this user to prevent race conditions
+            StorageProvider.objects.filter(user=request.user).select_for_update()
+            
+            # Unset all other defaults
+            StorageProvider.objects.filter(
+                user=request.user,
+                is_default=True
+            ).exclude(pk=storage_provider.pk).update(is_default=False)
+            
+            # Set this one as default
+            storage_provider.is_default = True
+            storage_provider.save()
         
         serializer = self.get_serializer(storage_provider)
         return Response(serializer.data)

@@ -22,7 +22,7 @@ class StorageProvider(models.Model):
     is_active = models.BooleanField(default=True)
     
     # Encrypted credentials stored as JSON
-    encrypted_credentials = models.TextField(help_text="Encrypted JSON containing provider-specific credentials")
+    encrypted_credentials = models.TextField(blank=True, help_text="Encrypted JSON containing provider-specific credentials")
     
     # Provider-specific configuration (non-sensitive)
     config = models.JSONField(default=dict, blank=True, help_text="Provider-specific configuration like region, bucket name, etc.")

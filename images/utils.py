@@ -67,10 +67,11 @@ def optimize_image(image_file, quality=85, max_width=None, max_height=None):
     
     # Try to extract EXIF data
     try:
-        exif = img._getexif()
-        if exif:
-            metadata['exif'] = {k: str(v) for k, v in exif.items() if isinstance(v, (str, int, float))}
-    except:
+        exif_data = img.getexif()
+        if exif_data:
+            metadata['exif'] = {k: str(v) for k, v in exif_data.items() if isinstance(v, (str, int, float))}
+    except (AttributeError, Exception):
+        # getexif() not available or error occurred
         pass
     
     return output, metadata

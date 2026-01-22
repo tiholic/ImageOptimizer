@@ -4,11 +4,14 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.parsers import MultiPartParser, FormParser
 from django.db import transaction
+import logging
 from .models import Image
 from .serializers import ImageSerializer, ImageUploadSerializer
 from storage.models import StorageProvider
 from storage.backends import get_storage_backend
 from .utils import optimize_image, get_image_info, generate_storage_path
+
+logger = logging.getLogger(__name__)
 
 
 class ImageViewSet(viewsets.ModelViewSet):
@@ -138,7 +141,7 @@ class ImageViewSet(viewsets.ModelViewSet):
             backend.delete(image.storage_path)
         except Exception as e:
             # Log error but continue with database deletion
-            print(f"Error deleting from storage: {e}")
+            logger.error(f"Error deleting image from storage: {e}")
         
         # Delete from database
         image.delete()
